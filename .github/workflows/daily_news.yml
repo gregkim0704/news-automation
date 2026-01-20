@@ -20,9 +20,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          cd news_automation
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run news digest
         env:
@@ -33,6 +31,4 @@ jobs:
           RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
           KEYWORDS: ${{ secrets.KEYWORDS }}
           SCHEDULE_TIME: "08:00"
-        run: |
-          cd news_automation
-          python main.py --now --limit 50
+        run: python main.py --now --limit 50
