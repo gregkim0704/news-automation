@@ -1,6 +1,6 @@
 """
 이메일 전송 모듈
-뉴스 요약을 HTML 형식으로 변환하고 이메일로 전송합니다.
+뉴스를 HTML 형식으로 변환하고 이메일로 전송합니다.
 """
 
 import smtplib
@@ -27,6 +27,16 @@ def create_html_digest(articles: list['NewsArticle'], keywords: list[str]) -> st
     today = datetime.now().strftime('%Y년 %m월 %d일')
     keywords_str = ', '.join(keywords)
 
+    # 언론사별 기사 수 집계
+    source_counts = {}
+    for article in articles:
+        source = article['source']
+        source_counts[source] = source_counts.get(source, 0) + 1
+
+    # 상위 5개 언론사
+    top_sources = sorted(source_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    sources_summary = ', '.join([f"{name}({count})" for name, count in top_sources])
+
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -40,16 +50,37 @@ def create_html_digest(articles: list['NewsArticle'], keywords: list[str]) -> st
                 max-width: 1200px;
                 margin: 0 auto;
                 padding: 20px;
+                background-color: #f5f5f5;
+            }}
+            .container {{
+                background-color: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             }}
             h1 {{
                 color: #1a73e8;
-                border-bottom: 2px solid #1a73e8;
-                padding-bottom: 10px;
+                border-bottom: 3px solid #1a73e8;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
             }}
             .meta {{
-                color: #666;
+                background-color: #e8f0fe;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+            }}
+            .meta-item {{
+                margin: 5px 0;
+            }}
+            .stats {{
+                display: inline-block;
+                background-color: #1a73e8;
+                color: white;
+                padding: 5px 15px;
+                border-radius: 20px;
                 font-size: 14px;
-                margin-bottom: 20px;
+                margin-right: 10px;
             }}
             table {{
                 width: 100%;
@@ -59,40 +90,49 @@ def create_html_digest(articles: list['NewsArticle'], keywords: list[str]) -> st
             th {{
                 background-color: #1a73e8;
                 color: white;
-                padding: 12px;
+                padding: 15px 12px;
                 text-align: left;
+                font-size: 14px;
             }}
             td {{
-                padding: 10px;
-                border-bottom: 1px solid #ddd;
+                padding: 12px;
+                border-bottom: 1px solid #e0e0e0;
                 vertical-align: top;
             }}
             tr:nth-child(even) {{
-                background-color: #f9f9f9;
+                background-color: #fafafa;
             }}
             tr:hover {{
-                background-color: #f1f1f1;
+                background-color: #f0f7ff;
             }}
             .title-link {{
                 color: #1a73e8;
                 text-decoration: none;
-                font-weight: bold;
+                font-weight: 600;
+                font-size: 14px;
             }}
             .title-link:hover {{
                 text-decoration: underline;
+                color: #0d47a1;
             }}
             .source {{
-                color: #666;
-                font-size: 12px;
+                display: inline-block;
+                background-color: #e3f2fd;
+                color: #1565c0;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 500;
             }}
             .time {{
                 color: #888;
                 font-size: 12px;
                 white-space: nowrap;
             }}
-            .summary {{
-                font-size: 13px;
-                color: #555;
+            .num {{
+                color: #888;
+                font-weight: bold;
+                text-align: center;
             }}
             .footer {{
                 margin-top: 30px;
@@ -100,41 +140,50 @@ def create_html_digest(articles: list['NewsArticle'], keywords: list[str]) -> st
                 border-top: 1px solid #ddd;
                 font-size: 12px;
                 color: #888;
+                text-align: center;
+            }}
+            .source-list {{
+                font-size: 12px;
+                color: #666;
+                margin-top: 10px;
             }}
         </style>
     </head>
     <body>
-        <h1>📰 오늘의 뉴스 다이제스트</h1>
-        <div class="meta">
-            <strong>날짜:</strong> {today}<br>
-            <strong>키워드:</strong> {keywords_str}<br>
-            <strong>총 기사 수:</strong> {len(articles)}개
-        </div>
+        <div class="container">
+            <h1>📰 오늘의 뉴스 다이제스트</h1>
 
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 5%;">#</th>
-                    <th style="width: 30%;">제목</th>
-                    <th style="width: 10%;">출처</th>
-                    <th style="width: 12%;">시간</th>
-                    <th style="width: 43%;">요약</th>
-                </tr>
-            </thead>
-            <tbody>
+            <div class="meta">
+                <div class="meta-item"><strong>📅 날짜:</strong> {today}</div>
+                <div class="meta-item"><strong>🔑 키워드:</strong> {keywords_str}</div>
+                <div class="meta-item">
+                    <span class="stats">총 {len(articles)}개 기사</span>
+                    <span class="stats">{len(source_counts)}개 언론사</span>
+                </div>
+                <div class="source-list"><strong>주요 출처:</strong> {sources_summary}</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 50%;">제목</th>
+                        <th style="width: 15%;">출처</th>
+                        <th style="width: 15%;">시간</th>
+                    </tr>
+                </thead>
+                <tbody>
     """
 
     for i, article in enumerate(articles, 1):
-        title = article['title'][:60] + '...' if len(article['title']) > 60 else article['title']
-        summary = article['summary'][:150] + '...' if len(article['summary']) > 150 else article['summary']
+        title = article['title'][:80] + '...' if len(article['title']) > 80 else article['title']
 
         html += f"""
                 <tr>
-                    <td>{i}</td>
+                    <td class="num">{i}</td>
                     <td><a href="{article['link']}" class="title-link" target="_blank">{title}</a></td>
-                    <td class="source">{article['source']}</td>
+                    <td><span class="source">{article['source']}</span></td>
                     <td class="time">{article['published']}</td>
-                    <td class="summary">{summary}</td>
                 </tr>
         """
 
@@ -144,7 +193,8 @@ def create_html_digest(articles: list['NewsArticle'], keywords: list[str]) -> st
 
         <div class="footer">
             이 이메일은 자동으로 생성되었습니다.<br>
-            Google News RSS를 통해 수집된 뉴스입니다.
+            네이버, 다음, 및 30개 이상의 언론사 RSS에서 수집된 뉴스입니다.
+        </div>
         </div>
     </body>
     </html>
@@ -188,9 +238,20 @@ def send_digest(
         print("=" * 60)
         print(f"수신자: {', '.join(recipients)}")
         print(f"기사 수: {len(articles)}개")
-        print("\n[HTML 미리보기 - 처음 1000자]")
+
+        # 언론사별 통계
+        source_counts = {}
+        for article in articles:
+            source = article['source']
+            source_counts[source] = source_counts.get(source, 0) + 1
+
+        print(f"\n[언론사별 기사 수]")
+        for source, count in sorted(source_counts.items(), key=lambda x: x[1], reverse=True):
+            print(f"  {source}: {count}개")
+
+        print("\n[HTML 미리보기 - 처음 500자]")
         print("-" * 60)
-        print(html_content[:1000])
+        print(html_content[:500])
         print("...")
         print("-" * 60)
         return True
@@ -237,11 +298,18 @@ if __name__ == "__main__":
     # 테스트 데이터
     test_articles = [
         {
-            'title': '테스트 기사 제목',
-            'link': 'https://example.com',
+            'title': '테스트 기사 제목 1',
+            'link': 'https://example.com/1',
             'published': '2025-01-20 10:00',
-            'source': '테스트 뉴스',
-            'summary': '이것은 테스트 요약입니다.'
+            'source': '조선일보',
+            'summary': ''
+        },
+        {
+            'title': '테스트 기사 제목 2',
+            'link': 'https://example.com/2',
+            'published': '2025-01-20 11:00',
+            'source': '연합뉴스',
+            'summary': ''
         }
     ]
     html = create_html_digest(test_articles, ['테스트'])
