@@ -1,0 +1,38 @@
+name: Daily News Digest
+
+on:
+  schedule:
+    # 매일 한국시간 오전 8시 실행 (UTC 23:00 = KST 08:00)
+    - cron: '0 23 * * *'
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          cd news_automation
+          pip install -r requirements.txt
+
+      - name: Run news digest
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+          KEYWORDS: ${{ secrets.KEYWORDS }}
+          SCHEDULE_TIME: "08:00"
+        run: |
+          cd news_automation
+          python main.py --now --limit 50
