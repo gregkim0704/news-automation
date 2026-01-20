@@ -31,4 +31,4 @@ jobs:
           RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
           KEYWORDS: ${{ secrets.KEYWORDS }}
           SCHEDULE_TIME: "08:00"
-        run: python main.py --now --limit 50
+        run: python main.py --now --limit 20
